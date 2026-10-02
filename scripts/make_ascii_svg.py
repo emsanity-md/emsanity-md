@@ -60,22 +60,29 @@ def build_svg(rows: list[str], out_path: Path) -> None:
     parts.append('<rect width="100%" height="100%" fill="#0d1117" rx="12"/>')
     parts.append('<defs>')
 
+    def baseline(i: int) -> int:
+        return pad + (i + 1) * line_h - 2
+
+    # The clip band must line up with the glyph box, which sits above the
+    # baseline. Deriving it from the row's top edge instead leaves a full
+    # line_h of offset, so each row was clipped to a ~2px sliver.
+    def band_top(i: int) -> int:
+        return baseline(i) - fs + 2
+
     row_width = width - pad * 2
     for i, _ in enumerate(rows):
-        y = pad + i * line_h
-        parts.append(f'<clipPath id="clip-{i}"><rect x="{pad}" y="{y - fs + 2}" width="0" height="{line_h}" rx="2">')
+        parts.append(f'<clipPath id="clip-{i}"><rect x="{pad}" y="{band_top(i)}" width="0" height="{line_h}" rx="2">')
         parts.append(f'<animate attributeName="width" from="0" to="{row_width}" begin="{i * 0.05:.2f}s" dur="0.28s" fill="freeze" />')
         parts.append('</rect></clipPath>')
     parts.append('</defs>')
 
     parts.append(f'<g font-family="ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" font-size="{fs}" fill="#c9d1d9">')
     for i, row in enumerate(rows):
-        y = pad + (i + 1) * line_h - 2
-        parts.append(f'<text x="{pad}" y="{y}" clip-path="url(#clip-{i})" xml:space="preserve">{html.escape(row)}</text>')
+        parts.append(f'<text x="{pad}" y="{baseline(i)}" clip-path="url(#clip-{i})" xml:space="preserve">{html.escape(row)}</text>')
 
     cursor_h = line_h - 2
     for i, row in enumerate(rows):
-        y = pad + i * line_h - fs + 3
+        y = band_top(i)
         row_len = len(row) * char_w
         begin = i * 0.05
         dur = 0.28
