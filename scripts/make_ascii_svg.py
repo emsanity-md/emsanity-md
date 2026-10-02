@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 import html
+import io
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +14,7 @@ RAMP = " .`:-=+*cs#%@"
 ROOT = Path(__file__).resolve().parents[1]
 INPUT = ROOT / "source-prepped.png"
 OUTPUT = ROOT / "avi-ascii.svg"
+DEFAULT_AVATAR_URL = "https://github.com/emsanity-md.png?size=512"
 
 
 def fallback_rows(width: int = 100, height: int = 53) -> list[str]:
@@ -30,10 +34,19 @@ def fallback_rows(width: int = 100, height: int = 53) -> list[str]:
 
 
 def image_to_rows(path: Path, cols: int = 100) -> list[str]:
-    if not path.exists():
-        return fallback_rows(cols, 53)
+    if path.exists():
+        img = Image.open(path).convert("L")
+    else:
+        try:
+            req = urllib.request.Request(
+                DEFAULT_AVATAR_URL,
+                headers={"User-Agent": "profile-ascii-generator/1.0"},
+            )
+            with urllib.request.urlopen(req, timeout=10) as res:
+                img = Image.open(io.BytesIO(res.read())).convert("L")
+        except (urllib.error.URLError, TimeoutError, OSError):
+            return fallback_rows(cols, 53)
 
-    img = Image.open(path).convert("L")
     w, h = img.size
     aspect = h / max(1, w)
     rows = max(20, int(cols * aspect * 0.52))
