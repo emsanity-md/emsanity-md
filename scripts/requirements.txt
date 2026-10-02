@@ -4,4 +4,5 @@ beautifulsoup4==4.12.3
 pillow
 numpy
 opencv-python
-rembg
+# optional: only used when the source photo has no alpha channel.
+# rembg
